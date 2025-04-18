@@ -1,5 +1,4 @@
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
+ document.addEventListener('DOMContentLoaded', function() {
     
          // Utility function to parse cookies into a key-value object
 function parseCookies() {
@@ -193,4 +192,3 @@ const sub5Value = fbcCookie || fbpCookie;
       desktopContent.style.display = "block";
     }
   });
-</script>
