@@ -178,17 +178,20 @@ const sub5Value = fbcCookie || fbpCookie;
     const desktopContent = document.querySelector(".desktop-content");
 
     // Hide all content initially
-    iosContent.style.display = samsungContent.style.display =
-      androidContent.style.display = desktopContent.style.display = "none";
+   if (iosContent) iosContent.style.display = "none";
+   if (samsungContent) samsungContent.style.display = "none";
+   if (androidContent) androidContent.style.display = "none";
+   if (desktopContent) desktopContent.style.display = "none";
+	
 
     // Show content based on user agent
-    if (userAgent.includes("iphone") || userAgent.includes("ipad") || userAgent.includes("ipod")) {
-      iosContent.style.display = "block";
-    } else if (userAgent.includes("android") && userAgent.includes("sm-")) {
-      samsungContent.style.display = "block";
-    } else if (userAgent.includes("android")) {
-      androidContent.style.display = "block";
-    } else {
-      desktopContent.style.display = "block";
+  if (userAgent.includes("iphone") || userAgent.includes("ipad") || userAgent.includes("ipod")) {
+  if (iosContent) iosContent.style.display = "block";
+  } else if (userAgent.includes("android") && userAgent.includes("sm-")) {
+    if (samsungContent) samsungContent.style.display = "block";
+  } else if (userAgent.includes("android")) {
+    if (androidContent) androidContent.style.display = "block";
+  } else {
+    if (desktopContent) desktopContent.style.display = "block";
     }
   });
