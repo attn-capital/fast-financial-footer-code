@@ -194,4 +194,5 @@ const sub5Value = fbcCookie || fbpCookie;
   } else {
     if (desktopContent) desktopContent.style.display = "block";
     }
+   }
   });
