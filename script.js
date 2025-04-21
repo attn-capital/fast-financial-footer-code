@@ -65,7 +65,10 @@
       console.log(`Displaying ${deviceType} content`);
     } else {
       console.error(`Missing ${deviceType}-content element`);
-      document.querySelector('.desktop-content').style.display = 'block';
+      const fallbackEl = document.querySelector('.desktop-content');
+      if (fallbackEl) {
+        fallbackEl.style.display = 'block';
+      }
     }
   };
 
