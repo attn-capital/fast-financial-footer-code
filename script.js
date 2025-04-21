@@ -1,160 +1,143 @@
-document.addEventListener('DOMContentLoaded', function() {
+(function() {
+  // ================== Core Constants ==================
+  const COOKIE_TTL = 2592000; // 30 days in seconds
 
-  // Utility function to parse cookies into a key-value object
-  function parseCookies() {
-    const cookies = {};
-    document.cookie.split(';').forEach((cookie) => {
-      const [name, value] = cookie.split('=').map(c => c.trim());
-      if (name && value) {
-        cookies[name] = value;
-      }
+  // ================== Utility Functions ==================
+  const parseCookies = () => {
+    return document.cookie.split(';').reduce((cookies, str) => {
+      const [key, value] = str.split('=').map(s => s.trim());
+      if (key) cookies[key] = decodeURIComponent(value);
+      return cookies;
+    }, {});
+  };
+
+  // ================== Enhanced sub5 Handling ==================
+  const resolveSub5 = () => {
+    try {
+      const cookies = parseCookies();
+      const urlParams = new URLSearchParams(window.location.search);
+
+      const sources = [
+        { value: cookies._fbc, type: 'facebook_fbc' },
+        { value: cookies._fbp, type: 'facebook_fbp' },
+        { value: urlParams.get('sub5'), type: 'url_param' },
+        { value: cookies.sub5_backup, type: 'backup_cookie' }
+      ];
+
+      const validSource = sources.find(s => s.value);
+      if (validSource) return validSource;
+
+      const newId = `sub5_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+      document.cookie = `sub5_backup=${newId}; path=/; max-age=${COOKIE_TTL}; SameSite=Lax`;
+      return { value: newId, type: 'generated' };
+
+    } catch (err) {
+      console.error('sub5 Resolution Error:', err);
+      return { value: 'error', type: 'error' };
+    }
+  };
+
+  // ================== Device Detection ==================
+  const detectDevice = () => {
+    const ua = navigator.userAgent.toLowerCase();
+    return {
+      isIOS: /iphone|ipad|ipod/.test(ua),
+      isSamsung: /samsung|sm-|galaxy/.test(ua),
+      isAndroid: /android/.test(ua)
+    };
+  };
+
+  const displayDeviceContent = () => {
+    document.querySelectorAll('.device-content').forEach(el => {
+      el.style.display = 'none';
     });
-    return cookies;
-  }
 
-  const allCookies = parseCookies();
+    const { isIOS, isSamsung, isAndroid } = detectDevice();
+    let deviceType = 'desktop';
 
-  Object.keys(allCookies).forEach((cookieName) => {
-    const cookieValue = allCookies[cookieName];
-    Sentry.setTag(cookieName, cookieValue);
-  });
+    if (isIOS) deviceType = 'ios';
+    else if (isSamsung) deviceType = 'samsung';
+    else if (isAndroid) deviceType = 'android';
 
-  Sentry.captureMessage('All cookies logged dynamically', {
-    level: 'info',
-    extra: {
-      cookies: allCookies,
-      location: window.location.href,
-    },
-  });
+    const contentEl = document.querySelector(`.${deviceType}-content`);
+    if (contentEl) {
+      contentEl.style.display = 'block';
+      console.log(`Displaying ${deviceType} content`);
+    } else {
+      console.error(`Missing ${deviceType}-content element`);
+      document.querySelector('.desktop-content').style.display = 'block';
+    }
+  };
 
-  function logDebug(message) {
-    console.log("Debug: " + message);
-  }
+  // ================== Link Management ==================
+  const updateLinks = (params) => {
+    document.querySelectorAll('a').forEach(link => {
+      if (!link.href.includes(window.location.hostname)) {
+        try {
+          const url = new URL(link.href);
+          params.forEach((value, key) => url.searchParams.set(key, value));
+          link.href = url.toString();
 
-  function getCookie(name) {
-    const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-    return match ? match[2] : null;
-  }
-
-  let queryString = window.location.search;
-  queryString = queryString.replace("?%3Fsub2=", "&sub2=");
-  console.log(queryString);
-
-  const urlParams = new URLSearchParams(queryString);
-  const paramsObject = Object.fromEntries(urlParams.entries());
-
-  Object.keys(paramsObject).forEach((key) => {
-    Sentry.setTag(key, paramsObject[key]);
-  });
-
-  Sentry.captureMessage('Captured All URL Parameters', {
-    level: 'info',
-    extra: {
-      urlParams: paramsObject,
-      location: window.location.href,
-      cookies: document.cookie,
-    },
-  });
-
-  Sentry.addBreadcrumb({
-    category: 'URL Parameters',
-    message: 'URL parameters captured dynamically',
-    level: 'info',
-    data: paramsObject,
-  });
-
-  let sub2Value;
-  if (!urlParams.has('sub2') || !urlParams.get('sub2').trim()) {
-    const utmAdsetId = urlParams.get('utm_term') || urlParams.get('utm_source') || urlParams.get('utm_campaign') || 'w';
-    sub2Value = utmAdsetId;
-    urlParams.set('sub2', sub2Value);
-    logDebug(`sub2 parameter missing; set to: ${sub2Value}`);
-  } else {
-    sub2Value = urlParams.getAll('sub2').join(", ");
-    logDebug(`sub2 parameter captured with values: ${sub2Value}`);
-  }
-
-  if (sub2Value) {
-    Sentry.captureMessage('sub-two value set', {
-      level: 'info',
-      extra: { 'sub-two': sub2Value },
-    });
-    Sentry.setTag('sub-two', sub2Value);
-    logDebug(`Sentry tag 'sub-two' set with value: ${sub2Value}`);
-  }
-
-  const fbpCookie = getCookie('_fbp');
-  const fbcCookie = getCookie('_fbc');
-  const sub5Value = fbcCookie || fbpCookie;
-  if (sub5Value) {
-    urlParams.set('sub5', sub5Value);
-    logDebug(`sub5 parameter set from fbp cookie: ${sub5Value}`);
-  }
-
-  const pathArray = window.location.pathname.split('/').filter(Boolean);
-  const slug = pathArray.pop();
-  if (slug && !urlParams.has('sub3')) {
-    urlParams.set('sub3', slug);
-    logDebug(`sub3 parameter set from URL slug: ${slug}`);
-  }
-
-  const updatedParams = urlParams.toString();
-
-  function updateLinks() {
-    const allLinks = document.querySelectorAll('a');
-    allLinks.forEach(function(link) {
-      if (link.href && !link.href.includes(window.location.hostname)) {
-        const linkUrl = new URL(link.href);
-        linkUrl.search += (linkUrl.search ? '&' : '?') + updatedParams;
-        link.href = linkUrl.href;
-        logDebug("Updated link URL: " + link.href);
-
-        link.addEventListener('click', function() {
-          fbq('track', 'Subscribe');
-          _tfa.push({notify: 'event', name: 'ArticleLinkClick', id: 1790277});
-          gtag('event', 'conversion', {
-            'send_to': 'AW-16661394375/KFtbCL7Q76AaEMfn4og-',
-            'value': 1.0,
-            'currency': 'USD',
-            'transaction_id': ''
-          });
-
-          if (typeof ttq !== 'undefined') {
-            ttq.track('ClickButton');
-            console.log('TikTok Pixel Event Fired: ClickButton');
-          } else {
-            console.warn('TikTok Pixel is not loaded.');
+          if (!link.dataset.tracked) {
+            link.addEventListener('click', () => {
+              fbq('track', 'Subscribe');
+              _tfa.push({ notify: 'event', name: 'ArticleLinkClick', id: 1790277 });
+              gtag('event', 'conversion', {
+                'send_to': 'AW-16661394375/KFtbCL7Q76AaEMfn4og-',
+                'value': 1.0,
+                'currency': 'USD'
+              });
+              ttq?.track('ClickButton');
+            });
+            link.dataset.tracked = true;
           }
-        });
+        } catch (err) {
+          console.error('Link processing failed:', err);
+        }
       }
     });
-  }
+  };
 
-  updateLinks();
-  const observer = new MutationObserver(updateLinks);
-  observer.observe(document.body, { childList: true, subtree: true });
+  // ================== Main Logic ==================
+  const initializeApp = () => {
+    const urlParams = new URLSearchParams(window.location.search);
 
-  logDebug(`URL parameters applied to all links: ${updatedParams}`);
+    if (!urlParams.has('sub2')) {
+      const utmSource = urlParams.get('utm_term') || urlParams.get('utm_source') || 'default';
+      urlParams.set('sub2', utmSource);
+      console.log('sub2 set from UTM:', utmSource);
+    }
 
-  const userAgent = navigator.userAgent.toLowerCase();
-  const iosContent = document.querySelector(".ios-content");
-  const samsungContent = document.querySelector(".samsung-content");
-  const androidContent = document.querySelector(".android-content");
-  const desktopContent = document.querySelector(".desktop-content");
+    const slug = window.location.pathname.split('/').pop();
+    if (slug && !urlParams.has('sub3')) {
+      urlParams.set('sub3', slug);
+      console.log('sub3 set from slug:', slug);
+    }
 
-  if (iosContent) iosContent.style.display = "none";
-  if (samsungContent) samsungContent.style.display = "none";
-  if (androidContent) androidContent.style.display = "none";
-  if (desktopContent) desktopContent.style.display = "none";
+    const sub5Data = resolveSub5();
+    urlParams.set('sub5', sub5Data.value);
+    console.info('Final Tracking Parameters:', {
+      sub2: urlParams.get('sub2'),
+      sub3: urlParams.get('sub3'),
+      sub5: sub5Data.value,
+      sub5_source: sub5Data.type
+    });
 
-  if (userAgent.includes("iphone") || userAgent.includes("ipad") || userAgent.includes("ipod")) {
-    if (iosContent) iosContent.style.display = "block";
-  } else if (userAgent.includes("android") && userAgent.includes("sm-")) {
-    if (samsungContent) samsungContent.style.display = "block";
-  } else if (userAgent.includes("android")) {
-    if (androidContent) androidContent.style.display = "block";
-  } else if (desktopContent) {
-    desktopContent.style.display = "block";
-  }
+    displayDeviceContent();
+    updateLinks(urlParams);
 
-});
+    let updateTimeout;
+    new MutationObserver(() => {
+      clearTimeout(updateTimeout);
+      updateTimeout = setTimeout(() => updateLinks(urlParams), 100);
+    }).observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  };
+
+  document.addEventListener('DOMContentLoaded', initializeApp);
+  window.addEventListener('load', () => {
+    setTimeout(initializeApp, 3000);
+  });
+})();
