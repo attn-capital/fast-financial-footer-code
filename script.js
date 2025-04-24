@@ -1,3 +1,7 @@
+if (typeof window._tfa === 'undefined') {
+  window._tfa = [];
+}
+
 (function() {
   // ================== Core Constants ==================
   const COOKIE_TTL = 2592000; // 30 days in seconds
