@@ -1,3 +1,6 @@
+// FOOTER CODE - fast-financial-footer-code/script.js
+
+// Safe fallback for Taboola
 if (typeof window._tfa === 'undefined') {
   window._tfa = [];
 }
@@ -87,14 +90,29 @@ if (typeof window._tfa === 'undefined') {
 
           if (!link.dataset.tracked) {
             link.addEventListener('click', () => {
-              fbq('track', 'Subscribe');
-              _tfa.push({ notify: 'event', name: 'ArticleLinkClick', id: 1790277 });
-              gtag('event', 'conversion', {
-                'send_to': 'AW-16661394375/KFtbCL7Q76AaEMfn4og-',
-                'value': 1.0,
-                'currency': 'USD'
-              });
-              ttq?.track('ClickButton');
+              // ========== Fire Pixels on Click (in correct order) ==========
+              
+              // Taboola - must fire first
+              if (typeof _tfa !== 'undefined') {
+                _tfa.push({ notify: 'event', name: 'ArticleLinkClick', id: 1790277 });
+              }
+              // Meta Pixel
+              if (typeof fbq !== 'undefined') {
+                fbq('track', 'Subscribe');
+              }
+              // Google Ads
+              if (typeof gtag !== 'undefined') {
+                gtag('event', 'conversion', {
+                  'send_to': 'AW-16661394375/KFtbCL7Q76AaEMfn4og-',
+                  'value': 1.0,
+                  'currency': 'USD'
+                });
+              }
+              // TikTok
+              if (typeof ttq !== 'undefined') {
+                ttq.track('ClickButton');
+              }
+
             });
             link.dataset.tracked = true;
           }
