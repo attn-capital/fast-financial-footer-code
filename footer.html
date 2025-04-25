@@ -1,10 +1,10 @@
-// FOOTER CODE - fast-financial-footer-code/script.js
+<!-- Fast Financial Footer Code -->
+<!-- Release Version: v1.1.0 -->
+<!-- Source: https://github.com/attn-capital/fast-financial-footer-code/releases -->
+<!-- IMPORTANT: Paste this entire HTML directly into Webflow FOOTER section -->
+<!-- After pasting, update the "Release Version" line above to match the GitHub release version -->
 
-// Safe fallback for Taboola
-if (typeof window._tfa === 'undefined') {
-  window._tfa = [];
-}
-
+<script>
 (function() {
   // ================== Core Constants ==================
   const COOKIE_TTL = 2592000; // 30 days in seconds
@@ -23,7 +23,8 @@ if (typeof window._tfa === 'undefined') {
     try {
       const cookies = parseCookies();
       const urlParams = new URLSearchParams(window.location.search);
-
+      
+      // Priority-based value resolution
       const sources = [
         { value: cookies._fbc, type: 'facebook_fbc' },
         { value: cookies._fbp, type: 'facebook_fbp' },
@@ -31,9 +32,11 @@ if (typeof window._tfa === 'undefined') {
         { value: cookies.sub5_backup, type: 'backup_cookie' }
       ];
 
+      // Find first valid source
       const validSource = sources.find(s => s.value);
       if (validSource) return validSource;
 
+      // Generate new ID if no sources found
       const newId = `sub5_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
       document.cookie = `sub5_backup=${newId}; path=/; max-age=${COOKIE_TTL}; SameSite=Lax`;
       return { value: newId, type: 'generated' };
@@ -55,27 +58,26 @@ if (typeof window._tfa === 'undefined') {
   };
 
   const displayDeviceContent = () => {
+    // Hide all device-specific content
     document.querySelectorAll('.device-content').forEach(el => {
       el.style.display = 'none';
     });
 
     const { isIOS, isSamsung, isAndroid } = detectDevice();
     let deviceType = 'desktop';
-
+    
     if (isIOS) deviceType = 'ios';
     else if (isSamsung) deviceType = 'samsung';
     else if (isAndroid) deviceType = 'android';
 
+    // Show appropriate content
     const contentEl = document.querySelector(`.${deviceType}-content`);
     if (contentEl) {
       contentEl.style.display = 'block';
       console.log(`Displaying ${deviceType} content`);
     } else {
       console.error(`Missing ${deviceType}-content element`);
-      const fallbackEl = document.querySelector('.desktop-content');
-      if (fallbackEl) {
-        fallbackEl.style.display = 'block';
-      }
+      document.querySelector('.desktop-content').style.display = 'block';
     }
   };
 
@@ -90,29 +92,18 @@ if (typeof window._tfa === 'undefined') {
 
           if (!link.dataset.tracked) {
             link.addEventListener('click', () => {
-              // ========== Fire Pixels on Click (in correct order) ==========
-              
-              // Taboola - must fire first
-              if (typeof _tfa !== 'undefined') {
-                _tfa.push({ notify: 'event', name: 'ArticleLinkClick', id: 1790277 });
-              }
               // Meta Pixel
-              if (typeof fbq !== 'undefined') {
-                fbq('track', 'Subscribe');
-              }
+              fbq('track', 'Subscribe');
+              // Taboola
+              _tfa.push({ notify: 'event', name: 'ArticleLinkClick', id: 1790277 });
               // Google Ads
-              if (typeof gtag !== 'undefined') {
-                gtag('event', 'conversion', {
-                  'send_to': 'AW-16661394375/KFtbCL7Q76AaEMfn4og-',
-                  'value': 1.0,
-                  'currency': 'USD'
-                });
-              }
+              gtag('event', 'conversion', {
+                'send_to': 'AW-16661394375/KFtbCL7Q76AaEMfn4og-',
+                'value': 1.0,
+                'currency': 'USD'
+              });
               // TikTok
-              if (typeof ttq !== 'undefined') {
-                ttq.track('ClickButton');
-              }
-
+              ttq?.track('ClickButton');
             });
             link.dataset.tracked = true;
           }
@@ -125,20 +116,24 @@ if (typeof window._tfa === 'undefined') {
 
   // ================== Main Logic ==================
   const initializeApp = () => {
+    // Process URL parameters
     const urlParams = new URLSearchParams(window.location.search);
-
+    
+    // Handle sub2 parameter
     if (!urlParams.has('sub2')) {
       const utmSource = urlParams.get('utm_term') || urlParams.get('utm_source') || 'default';
       urlParams.set('sub2', utmSource);
       console.log('sub2 set from UTM:', utmSource);
     }
 
+    // Handle sub3 parameter
     const slug = window.location.pathname.split('/').pop();
     if (slug && !urlParams.has('sub3')) {
       urlParams.set('sub3', slug);
       console.log('sub3 set from slug:', slug);
     }
 
+    // Handle sub5 parameter
     const sub5Data = resolveSub5();
     urlParams.set('sub5', sub5Data.value);
     console.info('Final Tracking Parameters:', {
@@ -148,9 +143,13 @@ if (typeof window._tfa === 'undefined') {
       sub5_source: sub5Data.type
     });
 
+    // Update device-specific content
     displayDeviceContent();
+
+    // Initial link processing
     updateLinks(urlParams);
 
+    // Dynamic content handler
     let updateTimeout;
     new MutationObserver(() => {
       clearTimeout(updateTimeout);
@@ -161,8 +160,10 @@ if (typeof window._tfa === 'undefined') {
     });
   };
 
+  // ================== Initialization ==================
   document.addEventListener('DOMContentLoaded', initializeApp);
   window.addEventListener('load', () => {
-    setTimeout(initializeApp, 3000);
+    setTimeout(initializeApp, 3000); // Secondary check
   });
 })();
+</script>
